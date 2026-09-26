@@ -16,12 +16,17 @@ public:
     Account(int account_number, double account_balance, AccountType account_type);
     int return_account_number() const { return account_number; };
     double return_account_balance() const { return account_balance; };
+    void top_off(double amount);
 };
 
 Account::Account(int account_number, double account_balance, AccountType account_type)
     : account_number(account_number), account_balance(account_balance), account_type(account_type)
 {
 
+}
+
+void Account::top_off(double amount) {
+    account_balance += amount;
 }
 
 class User {
@@ -34,8 +39,10 @@ public:
     User(const std::string& username, int user_id, const Account& chequing_account, const Account& savings_account);
     std::string return_username() const { return username; };
     int return_user_id() const { return user_id; };
-    Account return_chequing_account() const { return chequing_account; };
-    Account return_savings_account() const { return savings_account; };
+    const Account& return_chequing_account() const { return chequing_account; };
+    const Account& return_savings_account() const { return savings_account; };
+    bool deposit_chequing_account(double amount);
+    bool deposit_savings_account(double amount);
 };
 
 User::User(const std::string& username, int user_id, const Account& chequing_account, const Account& savings_account)
@@ -44,18 +51,35 @@ User::User(const std::string& username, int user_id, const Account& chequing_acc
 
 }
 
+
+bool User::deposit_chequing_account(double amount) {
+    if (amount < 0) {
+        std::cout << "Please enter a valid amount of money to deposit.\n";
+        return false;
+    }
+    chequing_account.top_off(amount);
+    return true;
+}
+
+bool User::deposit_savings_account(double amount) {
+    if (amount < 0) {
+        std::cout << "Please enter a valid amount of money to deposit.\n";
+        return false;
+    }
+    savings_account.top_off(amount);
+    return true;
+}
+
 class Bank {
 private:
     std::vector<User> user_database;
 public:
     bool user_registration(const std::string& username);
     bool display_information(const std::string& username);
-    std::vector<User> return_user_database() const { return user_database; };
-
 };
 
 bool Bank::user_registration(const std::string& username) {
-    for (const User& user : return_user_database()) {
+    for (const User& user : user_database) {
         if (username == user.return_username()) {
             std::cout << "Rejected: username {" << username << "} already exists. Please choose a different username.\n";
             return false;
@@ -106,7 +130,7 @@ bool Bank::display_information(const std::string& username) {
 }
 
 int intro_screen() {
-    int option = 0;
+    std::string option;
     std::cout << "========================================\n";
     std::cout << "              BANK SYSTEM\n";
     std::cout << "========================================\n";
@@ -120,10 +144,13 @@ int intro_screen() {
     std::cout << '\n';
     std::cout << "Selection: ";
     std::cin >> option;
-    if (!std::cin || (option <= 0 && option > 6)) {
-        return 0;
-    }
-    return option;
+    if (option == "1") return 1;
+    if (option == "2") return 2;
+    if (option == "3") return 3;
+    if (option == "4") return 4;
+    if (option == "5") return 5;
+    if (option == "6") return 6;
+    return 0;
 }
 
 std::string capture_username() {
@@ -133,15 +160,9 @@ std::string capture_username() {
         if (std::cin >> username) {
             return username;
         }
-        if (std::cin.eof()) {
-            std::cout << "Bad input, please type a valid username.\n";
-            std::cin.clear();
-            return "";
-        }
         std::cout << "Please enter a valid username.\n";
     }
 }
-
 
 int main()
 {
@@ -171,6 +192,7 @@ int main()
             break;
         }
         case 6: break;
+        default: continue;
         }
     } while (option != 6);
 
