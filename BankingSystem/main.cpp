@@ -46,6 +46,8 @@ public:
     bool deposit_savings_account(double amount);
 	bool withdraw_chequing_account(double amount);
 	bool withdraw_savings_account(double amount);
+    bool transfer_chequing_savings(double amount);
+    bool transfer_savings_chequing(double amount);
 };
 
 User::User(const std::string& username, int user_id, const Account& chequing_account, const Account& savings_account)
@@ -90,6 +92,27 @@ bool User::withdraw_savings_account(double amount) {
 	return true;
 }
 
+
+bool User::transfer_chequing_savings(double amount) {
+    if (amount > chequing_account.return_account_balance()) {
+        std::cout << "Insufficient funds in chequing account.\n";
+        return false;
+    }
+    chequing_account.top_off(-amount);
+    savings_account.top_off(amount);
+    return true;
+}
+
+bool User::transfer_savings_chequing(double amount) {
+    if (amount > savings_account.return_account_balance()) {
+        std::cout << "Insufficient funds in chequing account.\n";
+        return false;
+    }
+    savings_account.top_off(-amount);
+    chequing_account.top_off(amount);
+    return true;
+}
+
 class Bank {
 private:
     std::vector<User> user_database;
@@ -98,6 +121,7 @@ public:
     bool display_information(const std::string& username);
     void deposit_money(const std::string& username);
 	void withdraw_money(const std::string& username);
+    void transfer(const std::string& username);
 };
 
 bool Bank::user_registration(const std::string& username) {
@@ -286,14 +310,63 @@ void Bank::withdraw_money(const std::string& username) {
             break;
         }
         case 2: {
-            if (!(found_user->deposit_savings_account(withdrawal_amount))) {
+            if (!(found_user->withdraw_savings_account(withdrawal_amount))) {
                 continue;
             }
             std::cout << "Successfully withdrew " << withdrawal_amount << " from savings account.\n";
             break;
         }
         default: {
-            std::cout << "Nothing happened, this should not fire off. Check logic within deposit_money()\n";
+            std::cout << "Nothing happened, this should not fire off. Check logic within withdraw_money()\n";
+            continue;
+        }
+        }
+        break;
+    }
+}
+
+void Bank::transfer(const std::string& username) {
+    double deposit_amount = 0;
+    User* found_user = nullptr;
+    for (User& user : user_database) {
+        if (user.return_username() == username) {
+            found_user = &user;
+        }
+    }
+    if (!found_user) {
+        std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
+        return;
+    }
+    while (true) {
+        int account_type = choose_account();
+        if (account_type == 3) {
+            return;
+        }
+        std::cout << "Enter amount to transfer: ";
+        std::cin >> deposit_amount;
+        if (!std::cin) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Please enter a valid deposit value.\n";
+            continue;
+        }
+        switch (account_type) {
+        case 1: {
+            if (!(found_user->transfer_chequing_savings(deposit_amount))) {
+                continue;
+            }
+            std::cout << "Successfully transferred " << deposit_amount << " from chequing to savings.\n";
+            break;
+        }
+        case 2: {
+            if (!(found_user->transfer_savings_chequing(deposit_amount))) {
+                continue;
+            }
+            std::cout << "Successfully transferred " << deposit_amount << " from savings to chequing.\n";
+            break;
+        }
+        default: {
+            std::cout << "Nothing happened, this should not fire off. Check logic within transfer()\n";
             continue;
         }
         }
@@ -337,6 +410,11 @@ int main()
         case 4: {
             std::string username = capture_username();
             bank.withdraw_money(username);
+            break;
+        }
+        case 5: {
+            std::string username = capture_username();
+            bank.transfer(username);
             break;
         }
         case 6: break;
