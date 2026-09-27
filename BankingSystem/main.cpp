@@ -44,6 +44,8 @@ public:
     const Account& return_savings_account() const { return savings_account; };
     bool deposit_chequing_account(double amount);
     bool deposit_savings_account(double amount);
+	bool withdraw_chequing_account(double amount);
+	bool withdraw_savings_account(double amount);
 };
 
 User::User(const std::string& username, int user_id, const Account& chequing_account, const Account& savings_account)
@@ -70,6 +72,24 @@ bool User::deposit_savings_account(double amount) {
     return true;
 }
 
+bool User::withdraw_chequing_account(double amount) {
+    if (chequing_account.return_account_balance() - amount < 0) {
+        std::cout << "Insufficient funds in chequing account.\n";
+		return false;
+    }
+	chequing_account.top_off(-amount);
+	return true;
+}
+
+bool User::withdraw_savings_account(double amount) {
+    if (savings_account.return_account_balance() - amount < 0) {
+        std::cout << "Insufficient funds in savings account.\n";
+        return false;
+    }
+    savings_account.top_off(-amount);
+	return true;
+}
+
 class Bank {
 private:
     std::vector<User> user_database;
@@ -77,6 +97,7 @@ public:
     bool user_registration(const std::string& username);
     bool display_information(const std::string& username);
     void deposit_money(const std::string& username);
+	void withdraw_money(const std::string& username);
 };
 
 bool Bank::user_registration(const std::string& username) {
@@ -166,9 +187,9 @@ std::string capture_username() {
 }
 
 
-int choose_deposit_account() {
+int choose_account() {
     int result = 0;
-    std::cout << "Please enter an account to deposit money into: \n";
+    std::cout << "Please choose an account: \n";
     std::cout << "1. Chequing\n";
     std::cout << "2. Savings\n";
     std::cout << "3. Go back\n";
@@ -194,7 +215,7 @@ void Bank::deposit_money(const std::string& username) {
         return;
     }
     while (true) {
-        int account_type = choose_deposit_account();
+        int account_type = choose_account();
         if (account_type == 3) {
             return;
         }
@@ -208,13 +229,67 @@ void Bank::deposit_money(const std::string& username) {
         }
         switch (account_type) {
         case 1: {
-            found_user->deposit_chequing_account(deposit_amount);
+            if (!(found_user->deposit_chequing_account(deposit_amount))) {
+                continue;
+            }
             std::cout << "Successfully deposited " << deposit_amount << " to chequing account.\n";
             break;
         }
         case 2: {
-            found_user->deposit_savings_account(deposit_amount);
+            if (!(found_user->deposit_savings_account(deposit_amount))) {
+                continue;
+            }
             std::cout << "Successfully deposited " << deposit_amount << " to savings account.\n";
+            break;
+        }
+        default: {
+            std::cout << "Nothing happened, this should not fire off. Check logic within deposit_money()\n";
+            continue;
+        }
+        }
+        break;
+    }
+
+}
+
+void Bank::withdraw_money(const std::string& username) {
+    double withdrawal_amount = 0;
+    User* found_user = nullptr;
+    for (User& user : user_database) {
+        if (user.return_username() == username) {
+            found_user = &user;
+        }
+    }
+    if (!found_user) {
+        std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
+        return;
+    }
+    while (true) {
+        int account_type = choose_account();
+        if (account_type == 3) {
+            return;
+        }
+        std::cout << "Enter a withdrawal amount: ";
+        std::cin >> withdrawal_amount;
+        if (!std::cin) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Please enter a valid withdrawal value.\n";
+            continue;
+        }
+        switch (account_type) {
+        case 1: {
+            if (!(found_user->withdraw_chequing_account(withdrawal_amount))) {
+                continue;
+            }
+            std::cout << "Successfully withdrew " << withdrawal_amount << " from chequing account.\n";
+            break;
+        }
+        case 2: {
+            if (!(found_user->deposit_savings_account(withdrawal_amount))) {
+                continue;
+            }
+            std::cout << "Successfully withdrew " << withdrawal_amount << " from savings account.\n";
             break;
         }
         default: {
@@ -257,6 +332,11 @@ int main()
         case 3: {
             std::string username = capture_username();
             bank.deposit_money(username);
+            break;
+        }
+        case 4: {
+            std::string username = capture_username();
+            bank.withdraw_money(username);
             break;
         }
         case 6: break;
