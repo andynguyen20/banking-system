@@ -182,18 +182,14 @@ int choose_deposit_account() {
 }
 
 void Bank::deposit_money(const std::string& username) {
-    bool found = false;
     double deposit_amount = 0;
-    Account chequing_temp(0, 0.0, AccountType::chequing);
-    Account savings_temp(0, 0.0, AccountType::savings);
-    User user_temp("", 0, chequing_temp, savings_temp);
+    User* found_user = nullptr;
     for (User& user : user_database) {
         if (user.return_username() == username) {
-            user_temp = user;
-            found = true;
+            found_user = &user;
         }
     }
-    if (!found) {
+    if (!found_user) {
         std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
         return;
     }
@@ -212,13 +208,13 @@ void Bank::deposit_money(const std::string& username) {
         }
         switch (account_type) {
         case 1: {
-            user_temp.deposit_chequing_account(deposit_amount);
-            std::cout << "Successfully deposited " << deposit_amount << " to chequing account.";
+            found_user->deposit_chequing_account(deposit_amount);
+            std::cout << "Successfully deposited " << deposit_amount << " to chequing account.\n";
             break;
         }
         case 2: {
-            user_temp.deposit_savings_account(deposit_amount);
-            std::cout << "Successfully deposited " << deposit_amount << " to savings account.";
+            found_user->deposit_savings_account(deposit_amount);
+            std::cout << "Successfully deposited " << deposit_amount << " to savings account.\n";
             break;
         }
         default: {
