@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <limits>
 
 enum class AccountType {
     chequing = 0,
@@ -51,7 +52,6 @@ User::User(const std::string& username, int user_id, const Account& chequing_acc
 
 }
 
-
 bool User::deposit_chequing_account(double amount) {
     if (amount < 0) {
         std::cout << "Please enter a valid amount of money to deposit.\n";
@@ -76,6 +76,7 @@ private:
 public:
     bool user_registration(const std::string& username);
     bool display_information(const std::string& username);
+    void deposit_money(const std::string& username);
 };
 
 bool Bank::user_registration(const std::string& username) {
@@ -164,6 +165,72 @@ std::string capture_username() {
     }
 }
 
+
+int choose_deposit_account() {
+    int result = 0;
+    std::cout << "Please enter an account to deposit money into: \n";
+    std::cout << "1. Chequing\n";
+    std::cout << "2. Savings\n";
+    std::cout << "3. Go back\n";
+    std::cin >> result;
+    if (!std::cin || result < 0 || result > 3) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        return 0;
+    }
+    return result;
+}
+
+void Bank::deposit_money(const std::string& username) {
+    bool found = false;
+    double deposit_amount = 0;
+    Account chequing_temp(0, 0.0, AccountType::chequing);
+    Account savings_temp(0, 0.0, AccountType::savings);
+    User user_temp("", 0, chequing_temp, savings_temp);
+    for (User& user : user_database) {
+        if (user.return_username() == username) {
+            user_temp = user;
+            found = true;
+        }
+    }
+    if (!found) {
+        std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
+        return;
+    }
+    while (true) {
+        int account_type = choose_deposit_account();
+        if (account_type == 3) {
+            return;
+        }
+        std::cout << "Enter a deposit amount: ";
+        std::cin >> deposit_amount;
+        if (!std::cin) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Please enter a valid deposit value.\n";
+            continue;
+        }
+        switch (account_type) {
+        case 1: {
+            user_temp.deposit_chequing_account(deposit_amount);
+            std::cout << "Successfully deposited " << deposit_amount << " to chequing account.";
+            break;
+        }
+        case 2: {
+            user_temp.deposit_savings_account(deposit_amount);
+            std::cout << "Successfully deposited " << deposit_amount << " to savings account.";
+            break;
+        }
+        default: {
+            std::cout << "Nothing happened, this should not fire off. Check logic within deposit_money()\n";
+            continue;
+        }
+        }
+        break;
+    }
+
+}
+
 int main()
 {
     Bank bank;
@@ -189,6 +256,11 @@ int main()
         case 2: {
             std::string username = capture_username();
             bank.display_information(username);
+            break;
+        }
+        case 3: {
+            std::string username = capture_username();
+            bank.deposit_money(username);
             break;
         }
         case 6: break;
