@@ -10,8 +10,22 @@ Account::Account(int account_number, double account_balance, AccountType account
 
 }
 
-void Account::top_off(double amount) {
+bool Account::deposit(double amount) {
+    if (amount <= 0) {
+        std::cout << "Please enter a valid amount of money to deposit.\n";
+        return false;
+    }
     account_balance += amount;
+    return true;
+}
+
+bool Account::withdraw(double amount) {
+    if (account_balance - amount < 0 || amount < 0) {
+        std::cout << "Insufficient funds in savings account.\n";
+        return false;
+    }
+    account_balance -= amount;
+    return true;
 }
 
 User::User(const std::string& username, int user_id, const Account& chequing_account, const Account& savings_account)
@@ -21,58 +35,34 @@ User::User(const std::string& username, int user_id, const Account& chequing_acc
 }
 
 bool User::deposit_chequing_account(double amount) {
-    if (amount < 0) {
-        std::cout << "Please enter a valid amount of money to deposit.\n";
-        return false;
-    }
-    chequing_account.top_off(amount);
-    return true;
+    return chequing_account.deposit(amount);
 }
 
 bool User::deposit_savings_account(double amount) {
-    if (amount < 0) {
-        std::cout << "Please enter a valid amount of money to deposit.\n";
-        return false;
-    }
-    savings_account.top_off(amount);
-    return true;
+    return savings_account.deposit(amount);
 }
 
 bool User::withdraw_chequing_account(double amount) {
-    if (chequing_account.return_account_balance() - amount < 0) {
-        std::cout << "Insufficient funds in chequing account.\n";
-        return false;
-    }
-    chequing_account.top_off(-amount);
-    return true;
+    return chequing_account.withdraw(amount);
 }
 
 bool User::withdraw_savings_account(double amount) {
-    if (savings_account.return_account_balance() - amount < 0) {
-        std::cout << "Insufficient funds in savings account.\n";
-        return false;
-    }
-    savings_account.top_off(-amount);
-    return true;
+    return savings_account.withdraw(amount);
 }
 
 bool User::transfer_chequing_savings(double amount) {
-    if (amount > chequing_account.return_account_balance()) {
-        std::cout << "Insufficient funds in chequing account.\n";
+    if (!chequing_account.withdraw(amount)) {
         return false;
     }
-    chequing_account.top_off(-amount);
-    savings_account.top_off(amount);
+    savings_account.deposit(amount);
     return true;
 }
 
 bool User::transfer_savings_chequing(double amount) {
-    if (amount > savings_account.return_account_balance()) {
-        std::cout << "Insufficient funds in chequing account.\n";
+    if (!savings_account.withdraw(amount)) {
         return false;
     }
-    savings_account.top_off(-amount);
-    chequing_account.top_off(amount);
+    chequing_account.deposit(amount);
     return true;
 }
 
@@ -170,7 +160,7 @@ int choose_account() {
     std::cout << "2. Savings\n";
     std::cout << "3. Go back\n";
     std::cin >> result;
-    if (!std::cin || result < 0 || result > 3) {
+    if (!std::cin || result <= 0 || result > 3) {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         return 0;
@@ -180,12 +170,7 @@ int choose_account() {
 
 void Bank::deposit_money(const std::string& username) {
     double deposit_amount = 0;
-    User* found_user = nullptr;
-    for (User& user : user_database) {
-        if (user.return_username() == username) {
-            found_user = &user;
-        }
-    }
+    User* found_user = find_username();
     if (!found_user) {
         std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
         return;
@@ -230,12 +215,7 @@ void Bank::deposit_money(const std::string& username) {
 
 void Bank::withdraw_money(const std::string& username) {
     double withdrawal_amount = 0;
-    User* found_user = nullptr;
-    for (User& user : user_database) {
-        if (user.return_username() == username) {
-            found_user = &user;
-        }
-    }
+    User* found_user = find_username(username);
     if (!found_user) {
         std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
         return;
@@ -279,12 +259,7 @@ void Bank::withdraw_money(const std::string& username) {
 
 void Bank::transfer(const std::string& username) {
     double deposit_amount = 0;
-    User* found_user = nullptr;
-    for (User& user : user_database) {
-        if (user.return_username() == username) {
-            found_user = &user;
-        }
-    }
+    User* found_user = find_username(username);
     if (!found_user) {
         std::cout << "Could not find user in our database. Please enter a valid username or register as a new user option 1.\n";
         return;
@@ -325,4 +300,35 @@ void Bank::transfer(const std::string& username) {
         break;
     }
 
+}
+
+User* Bank::find_username(const std::string& username) {
+    User* temp = nullptr;
+    for (User& user : user_database) {
+        if (username == user.return_username()) {
+            temp = &user;
+        }
+    }
+    return temp;
+}
+
+User* Bank::find_user_id(int user_id) {
+    User* temp = nullptr;
+    for (User& user : user_database) {
+        if (user_id == user.return_user_id()) {
+            temp = &user;
+        }
+    }
+    return temp;
+}
+
+int capture_user_id() {
+    int user_id = 0;
+    while (true) {
+        std::cout << "Enter user ID: ";
+        if (std::cin >> user_id) {
+            return user_id;
+        }
+        std::cout << "Please enter a valid user ID.\n";
+    }
 }

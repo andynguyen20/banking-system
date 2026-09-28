@@ -16,7 +16,8 @@ public:
     Account(int account_number, double account_balance, AccountType account_type);
     int return_account_number() const { return account_number; };
     double return_account_balance() const { return account_balance; };
-    void top_off(double amount);
+    bool deposit(double amount);
+    bool withdraw(double amount);
 };
 
 class User {
@@ -48,8 +49,12 @@ public:
     void deposit_money(const std::string& username);
     void withdraw_money(const std::string& username);
     void transfer(const std::string& username);
+    User* find_username(const std::string& username);
+    User* find_user_id(int user_id);
+    User* find_account_id(int account_id);
 };
 
 int intro_screen();
 std::string capture_username();
 int choose_account();
+int capture_user_id();
